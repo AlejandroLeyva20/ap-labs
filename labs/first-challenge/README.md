@@ -12,22 +12,27 @@ This is the first challenge in your Advanced Programming Class.
 Build Requirements
 ------------------
 ```
-# Build Requirements here
+Some version of python.
 ```
 
 
 How to build
 ------------
 ```
-# instructions here
+1. Open your terminal.
+2. Navigate until folder where is firstCodeChallenge.py.
+3. Execute "python -m py_compile firstCodeChallenge.py" command.
+
+Note: If you want to change de input you'll have to enter on the file and change list.
 ```
 
 
 How to Run
 ----------
 ```
-# instructions here
+Run the "python firstCodeChallenge.py" command
 ```
+
 
 
 General instructions
