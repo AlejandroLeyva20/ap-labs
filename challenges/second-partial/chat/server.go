@@ -54,16 +54,16 @@ func broadcaster() {
 			cmd := "placeholder"
 			cmd = msgArr[2]
 
-			var currentUser user
+			var currUser user
 			for cli := range clients {
 				if cli.username == msgArr[0][1:] {
-					currentUser = cli
+					currUser = cli
 					break
 				}
 			}
 
 			if msgArr[0][1:] == "irc-server" {
-				currentUser.active = true
+				currUser.active = true
 			}
 
 			if len(cmd) > 0 && cmd[0] == '/' {
@@ -74,57 +74,57 @@ func broadcaster() {
 					for cli := range clients {
 						str += ("irc-server > " + cli.username + " - connected since " + cli.loggedAt + "\n")
 					}
-					currentUser.client <- (str[:len(str)-2])
+					currUser.client <- (str[:len(str)-2])
 
 				case "/msg":
 					if len(msgArr) > 4 && len(msgArr[4]) > 0 {
 						found := false
-						if currentUser.username != msgArr[3] {
+						if currUser.username != msgArr[3] {
 							for cli := range clients {
 								if cli.username == msgArr[3] {
 									msgbool = true
-									cli.client <- ("\n" + currentUser.username + " > " + msg[len(currentUser.username)+len(cli.username)+10:] + "\n")
+									cli.client <- ("\n" + currUser.username + " > " + msg[len(currUser.username)+len(cli.username)+10:] + "\n")
 									showPrompt(cli)
 									found = true
 									break
 								}
 							}
 							if !found {
-								currentUser.client <- "User was not found."
+								currUser.client <- "User was not found."
 							}
 						} else {
-							currentUser.client <- "Can't send a message to yourself!"
+							currUser.client <- "Can't send a message to yourself!"
 						}
 					} else {
-						currentUser.client <- "No message written."
+						currUser.client <- "No message written."
 					}
 
 				case "/time":
-					currentUser.client <- ("irc-server > Local Time: " + time.Now().String()[11:18] + " " + strings.Split(time.Now().String(), " ")[3])
+					currUser.client <- ("irc-server > Local Time: " + time.Now().String()[11:18] + " " + strings.Split(time.Now().String(), " ")[3])
 
 				case "/user":
 					if len(msgArr) > 3 && msgArr[3] != "" {
 						found := false
 						for cli := range clients {
 							if cli.username == msgArr[3] {
-								currentUser.client <- ("irc-server > username: " + cli.username + ", IP: " + cli.ip + ", Connected since: " + cli.loggedAt)
+								currUser.client <- ("irc-server > username: " + cli.username + ", IP: " + cli.ip + ", Connected since: " + cli.loggedAt)
 
 								found = true
 								break
 							}
 						}
 						if !found {
-							currentUser.client <- "User not found."
+							currUser.client <- "User not found."
 						}
 					} else {
-						currentUser.client <- "No user written."
+						currUser.client <- "No user written."
 					}
 
 				case "/kick":
 					if len(msgArr) > 3 && msgArr[3] != "" {
 						found := false
-						if currentUser.admin {
-							if currentUser.username != msgArr[3] {
+						if currUser.admin {
+							if currUser.username != msgArr[3] {
 								for cli := range clients {
 									if cli.username == msgArr[3] {
 										fmt.Printf("irc-server > [%s] was kicked\n", cli.username)
@@ -147,7 +147,7 @@ func broadcaster() {
 										cli.conn.Close()
 
 										for cli2 := range clients {
-											if cli2.username == currentUser.username {
+											if cli2.username == currUser.username {
 												cli2.client <- ("irc-server > [" + cli.username + "] was kicked from channel for bad language policy violation")
 											} else {
 												cli2.client <- ("\nirc-server > [" + cli.username + "] was kicked from channel for bad language policy violation\n")
@@ -160,32 +160,32 @@ func broadcaster() {
 									}
 								}
 								if !found {
-									currentUser.client <- "User was not found."
+									currUser.client <- "User was not found."
 								}
 							} else {
-								currentUser.client <- "Can't kick yourself!"
+								currUser.client <- "Can't kick yourself!"
 							}
 						} else {
-							currentUser.client <- "You are not ADMIN."
+							currUser.client <- "You are not ADMIN."
 							break
 						}
 					} else {
-						currentUser.client <- "No user written."
+						currUser.client <- "No user written."
 					}
 
 				default:
-					currentUser.client <- "Unrecognized command!"
+					currUser.client <- "Unrecognized command!"
 				}
 				if !msgbool {
-					currentUser.client <- "\n"
+					currUser.client <- "\n"
 				} else {
 					msgbool = false
 				}
-				showPrompt(currentUser)
+				showPrompt(currUser)
 			} else {
-				if currentUser.active {
+				if currUser.active {
 					for cli := range clients {
-						if cli != currentUser {
+						if cli != currUser {
 							cli.client <- (msg + "\n")
 							showPrompt(cli)
 						} else {
