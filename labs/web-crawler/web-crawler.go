@@ -13,8 +13,8 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"gopl.io/ch5/links"
@@ -25,38 +25,85 @@ import (
 // enforce a limit of 20 concurrent requests.
 var tokens = make(chan struct{}, 20)
 
-func crawl(url string) []string {
-	fmt.Println(url)
-	tokens <- struct{}{} // acquire a token
-	list, err := links.Extract(url)
-	<-tokens // release the token
+type Site struct {
+	depth int
+	link  string
+}
 
+var depth = flag.Int("depth", 1, "Insert crawler depth")
+var file = flag.String("results", "result.txt", "Results")
+
+func crawl(site Site) []Site {
+	f, err := os.OpenFile(*file, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Print(err)
+		fmt.Println(err)
 	}
-	return list
+	_, err = fmt.Fprintln(f, site.link)
+	if err != nil {
+		fmt.Println(err)
+		f.Close()
+	}
+	err = f.Close()
+	if err != nil {
+		fmt.Println(err)
+	}
+	if site.depth < *depth {
+		tokens <- struct{}{} // acquire a token
+		list, err := links.Extract(site.link)
+		sites := make([]Site, 0)
+		for _, link := range list {
+			sites = append(sites, Site{link: link, depth: site.depth + 1})
+		}
+		<-tokens // release the token
+		if err != nil {
+		}
+		return sites
+
+	}
+	return []Site{}
 }
 
 //!-sema
 
 //!+
 func main() {
-	worklist := make(chan []string)
+	flag.Parse()
+	if len(os.Args) < 4 {
+		fmt.Println("Invalid parameters.")
+		os.Exit(1)
+	}
+	worklist := make(chan []Site)
 	var n int // number of pending sends to worklist
 
 	// Start with the command-line arguments.
 	n++
-	go func() { worklist <- os.Args[1:] }()
+	file, err := os.Create(*name)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	err = file.Close()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	go func() {
+		urls := make([]Site, 0)
+		urls = append(urls, Site{link: (os.Args[3:])[0], depth: 0})
+		worklist <- urls
+	}()
 
 	// Crawl the web concurrently.
 	seen := make(map[string]bool)
 	for ; n > 0; n-- {
 		list := <-worklist
 		for _, link := range list {
-			if !seen[link] {
-				seen[link] = true
+			if !seen[link.link] {
+				seen[link.link] = true
 				n++
-				go func(link string) {
+				go func(link Site) {
 					worklist <- crawl(link)
 				}(link)
 			}
